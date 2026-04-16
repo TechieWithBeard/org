@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/booking-api"
+    },
+    {
+      "path": "./apps/BookingSearch-e2e"
+    },
+    {
+      "path": "./apps/BookingSearch"
+    }
+  ]
+}

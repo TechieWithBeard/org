@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "module": "node16",
+    "moduleResolution": "node16",
+    "outDir": "../../dist/apps/booking-api",
+    "rootDir": "../../",
+    "strict": true,
+    "target": "es2022",
+    "tsBuildInfoFile": "../../dist/apps/booking-api/tsconfig.tsbuildinfo",
+    "types": ["node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "../../shared/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
