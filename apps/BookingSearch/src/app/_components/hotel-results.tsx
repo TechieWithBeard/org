@@ -49,7 +49,9 @@ export function HotelResults({
               <div
                 className="hotel-image"
                 style={{
-                  backgroundImage: `linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.66)), ${hotel.image}`,
+                  backgroundImage: hotel.image.startsWith('http')
+                    ? `linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.66)), url(${hotel.image})`
+                    : `linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.66)), ${hotel.image}`,
                 }}
               >
                 <div className="hotel-badge">{hotel.distance}</div>

@@ -10,12 +10,18 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U booking_user -d booking"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   booking-api:
     build:
@@ -34,6 +40,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    storage_opt:
+      size: "768M"
     ports:
       - "4000:4000"
     healthcheck:
@@ -42,6 +50,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   booking-frontend:
     build:
@@ -55,8 +68,15 @@ services:
     depends_on:
       booking-api:
         condition: service_healthy
+    storage_opt:
+      size: "768M"
     ports:
       - "3000:3000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_data:

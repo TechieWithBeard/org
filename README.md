@@ -5,8 +5,9 @@ This workspace contains a small hotel booking demo built with Nx.
 It currently includes:
 
 - A `Next.js` frontend for searching hotel stays
-- A separate `Node.js` backend that returns fake hotel data
-- Shared hotel data generation logic used by the backend
+- A separate `Node.js` backend that queries Postgres for hotel data
+- A Postgres database with booking-oriented schema and seed tooling
+- A scalable property/photo seeding pipeline for future large datasets
 - An Nx setup so both apps can be run together during development
 
 ## What Is Built
@@ -22,7 +23,7 @@ The backend app provides:
 
 - `GET /health`
 - `GET /api/hotels`
-- Deterministic fake hotel results based on the query params
+- Database-backed hotel search results with pricing, amenities, and real image URLs
 
 The frontend does not call the backend directly from the browser. Instead:
 
@@ -51,6 +52,13 @@ apps/
 shared/
   booking-search/
     hotel-data.ts
+db/
+  init/
+    001-booking-schema.sql
+  seed-data/
+scripts/
+  fetch-house-photo-catalog.mjs
+  seed-booking-data.mjs
 ```
 
 ## Main Files
@@ -67,8 +75,20 @@ shared/
 - `apps/booking-api/src/server.ts`
   Node backend server with `/health` and `/api/hotels`
 
+- `apps/booking-api/src/search-hotels.ts`
+  Postgres-backed hotel search query
+
+- `db/init/001-booking-schema.sql`
+  Database schema for locations, properties, images, amenities, and nightly rates
+
+- `scripts/fetch-house-photo-catalog.mjs`
+  Fetches real house-photo metadata from Wikimedia Commons into a local catalog
+
+- `scripts/seed-booking-data.mjs`
+  Seeds Postgres with scalable fake booking inventory using the photo catalog
+
 - `shared/booking-search/hotel-data.ts`
-  Shared fake hotel generator used by the backend
+  Shared API response types used by frontend and backend
 
 ## Getting Started
 
@@ -144,6 +164,13 @@ Postgres will be available at:
 localhost:5432
 ```
 
+If you already created the Postgres volume before the schema files were added, recreate it once so Docker reruns the init scripts:
+
+```sh
+docker compose down -v
+docker compose up --build
+```
+
 To start only the frontend:
 
 ```sh
@@ -181,6 +208,28 @@ Or:
 ```sh
 npm run build:booking-api
 ```
+
+## Database Schema
+
+The booking database includes:
+
+- `locations`
+  Searchable city/location records
+
+- `properties`
+  Core stay inventory with pricing, ratings, guest capacity, and geodata
+
+- `property_images`
+  Real property image URLs and source attribution
+
+- `amenities`
+  Canonical amenity definitions
+
+- `property_amenities`
+  Many-to-many property amenity mapping
+
+- `nightly_rates`
+  Per-property, per-date pricing and availability
 
 ## Start The Built Backend
 
@@ -281,6 +330,7 @@ DATABASE_URL=postgresql://booking_user:booking_password@postgres:5432/booking
 ```
 
 The current demo API does not use Postgres yet, but the database is now part of the stack and ready for application code to connect to.
+The current app now queries Postgres for hotel search results.
 
 ## Docker Files
 
@@ -327,17 +377,69 @@ Stop the stack and remove the Postgres data volume:
 docker compose down -v
 ```
 
+## Seed Realistic Booking Data
+
+1. Start Postgres:
+
+```sh
+docker compose up -d postgres
+```
+
+2. Fetch a reusable real-photo catalog from Wikimedia Commons:
+
+```sh
+npm run db:photos
+```
+
+3. Seed the database with booking inventory:
+
+```sh
+npm run db:seed
+```
+
+4. Reset and reseed from scratch:
+
+```sh
+npm run db:seed:reset
+```
+
+Useful seed controls:
+
+- `SEED_PROPERTY_COUNT=5000 npm run db:seed`
+  Seed 5,000 properties
+
+- `SEED_PROPERTY_COUNT=100000 SEED_BATCH_SIZE=2000 npm run db:seed`
+  Seed 100,000 properties in larger batches
+
+- `SEED_PROPERTY_COUNT=1000000 SEED_BATCH_SIZE=5000 SEED_RATE_DAYS=30 npm run db:seed`
+  Generate 1 million properties with a shorter nightly-rate horizon to keep total row volume manageable
+
+Photo catalog notes:
+
+- The image catalog is stored in `db/seed-data/house-photo-catalog.json`
+- The fetch script uses the Wikimedia Commons API and stores attribution/license metadata with each image
+- The seeder reuses that catalog across many generated properties so you can scale record counts without scraping every run
+
 ## What Has Been Done So Far
 
 - Replaced the starter Nx/Next landing page with a booking search interface
-- Added a fake hotel search API flow
+- Replaced the fake hotel search flow with a Postgres-backed search path
 - Organized frontend code into components and small libs
 - Added a separate Node backend app
 - Registered the backend as an Nx project
-- Added a shared hotel data generator
+- Added a booking-oriented Postgres schema
+- Added a Wikimedia Commons photo catalog fetcher
+- Added a scalable seeding script for large datasets
 - Added a single command to run frontend and backend together
 
 ## Verification Completed
+
+- Postgres container starts healthy
+- Database schema applied successfully
+- Real-photo catalog fetched successfully
+- Seeded `500` properties, `500` images, and `60,000` nightly rate rows
+- API build passes
+- Database-backed hotel search returns seeded results
 
 The following commands have already been verified successfully during setup:
 
