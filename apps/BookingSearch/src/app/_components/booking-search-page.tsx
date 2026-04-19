@@ -30,8 +30,34 @@ async function fetchHotels(params: BookingSearchState) {
   return (await response.json()) as BookingSearchResponse;
 }
 
+function parseAiPrompt(prompt: string, fallback: BookingSearchState): BookingSearchState {
+  const normalizedPrompt = prompt.trim();
+
+  if (!normalizedPrompt) {
+    return fallback;
+  }
+
+  const guestsMatch = normalizedPrompt.match(/(\d+)\s*(guest|guests|people|person)/i);
+  const guests = guestsMatch ? Number(guestsMatch[1]) : fallback.guests;
+
+  const destination = normalizedPrompt
+    .replace(/for\s+\d+\s*(guest|guests|people|person)/gi, '')
+    .replace(/\b(next weekend|this weekend|tomorrow|today)\b/gi, '')
+    .replace(/\b(in|at|near)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return {
+    ...fallback,
+    destination: destination || fallback.destination,
+    guests,
+  };
+}
+
 export function BookingSearchPage() {
   const [search, setSearch] = useState<BookingSearchState>(initialSearchState);
+  const [aiMode, setAiMode] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
   const [data, setData] = useState<BookingSearchResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +88,9 @@ export function BookingSearchPage() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    loadHotels(search);
+    const nextSearch = aiMode ? parseAiPrompt(aiPrompt, search) : search;
+    setSearch(nextSearch);
+    loadHotels(nextSearch);
   }
 
   return (
@@ -78,8 +106,12 @@ export function BookingSearchPage() {
         </div>
 
         <SearchForm
+          aiMode={aiMode}
+          aiPrompt={aiPrompt}
           loading={loading}
           search={search}
+          setAiMode={setAiMode}
+          setAiPrompt={setAiPrompt}
           setSearch={setSearch}
           onSubmit={handleSubmit}
         />
