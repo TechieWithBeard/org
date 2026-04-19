@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-bookworm
+    container_name: booking-postgres
+    environment:
+      POSTGRES_DB: booking
+      POSTGRES_USER: booking_user
+      POSTGRES_PASSWORD: booking_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U booking_user -d booking"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  booking-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: booking-api
+    environment:
+      PORT: "4000"
+      HOST: "0.0.0.0"
+      PGHOST: "postgres"
+      PGPORT: "5432"
+      PGDATABASE: "booking"
+      PGUSER: "booking_user"
+      PGPASSWORD: "booking_password"
+      DATABASE_URL: "postgresql://booking_user:booking_password@postgres:5432/booking"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then((res) => { if (!res.ok) process.exit(1); }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  booking-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: booking-frontend
+    environment:
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      BOOKING_API_URL: "http://booking-api:4000"
+    depends_on:
+      booking-api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:

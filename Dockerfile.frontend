@@ -1,0 +1,31 @@
+FROM node:20-bookworm-slim AS deps
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY apps/BookingSearch/package.json apps/BookingSearch/package.json
+COPY apps/booking-api/package.json apps/booking-api/package.json
+RUN npm ci
+
+FROM node:20-bookworm-slim AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npx nx build BookingSearch
+
+FROM node:20-bookworm-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOST=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app ./
+
+EXPOSE 3000
+
+CMD ["npx", "nx", "start", "BookingSearch", "--hostname=0.0.0.0"]

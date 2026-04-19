@@ -120,6 +120,30 @@ To start both frontend and backend together:
 npm run dev:booking
 ```
 
+To run the whole workspace in Docker:
+
+```sh
+docker compose up --build
+```
+
+Then open:
+
+```text
+http://localhost:3000
+```
+
+The API will be available at:
+
+```text
+http://localhost:4000
+```
+
+Postgres will be available at:
+
+```text
+localhost:5432
+```
+
 To start only the frontend:
 
 ```sh
@@ -227,6 +251,80 @@ It can be overridden with:
 
 ```text
 BOOKING_API_URL
+```
+
+Inside Docker Compose, the frontend is configured to use:
+
+```text
+http://booking-api:4000
+```
+
+The Docker Compose stack also provisions Postgres with:
+
+```text
+host: postgres
+port: 5432
+database: booking
+user: booking_user
+password: booking_password
+```
+
+The API container receives these database environment variables:
+
+```text
+PGHOST=postgres
+PGPORT=5432
+PGDATABASE=booking
+PGUSER=booking_user
+PGPASSWORD=booking_password
+DATABASE_URL=postgresql://booking_user:booking_password@postgres:5432/booking
+```
+
+The current demo API does not use Postgres yet, but the database is now part of the stack and ready for application code to connect to.
+
+## Docker Files
+
+This repo now includes:
+
+- `Dockerfile.frontend`
+  Builds and serves the Next.js frontend on port `3000`
+
+- `Dockerfile.api`
+  Builds and runs the booking API on port `4000`
+
+- `docker-compose.yml`
+  Starts Postgres, the API, and the frontend together
+
+## Docker Postgres Setup
+
+Start the full stack:
+
+```sh
+docker compose up --build
+```
+
+Start only Postgres:
+
+```sh
+docker compose up postgres
+```
+
+Connect with `psql` from your host:
+
+```sh
+psql postgresql://booking_user:booking_password@localhost:5432/booking
+```
+
+Stop the stack:
+
+```sh
+docker compose down
+```
+
+Stop the stack and remove the Postgres data volume:
+
+```sh
+docker compose down -v
 ```
 
 ## What Has Been Done So Far
